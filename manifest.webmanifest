@@ -1,0 +1,10 @@
+{
+  "name": "IRON LOG - Workout Tracker",
+  "short_name": "IRON LOG",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#090b0d",
+  "theme_color": "#090b0d",
+  "description": "筋トレ記録・成長管理アプリ",
+  "icons": []
+}
