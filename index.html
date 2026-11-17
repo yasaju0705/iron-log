@@ -163,12 +163,43 @@ function updateEstimate(){
  $("#estimate").textContent=oneRM(w,r).toFixed(1)+" kg";
  $("#volume").textContent="総ボリューム："+fmt(w*r*s)+" kg";
 }
+
 function addEntry(){
- let w=+$("#weight").value,r=+$("#reps").value,s=+$("#sets").value;
- if(!(w>0&&r>0&&s>0))return alert("重量・回数・セット数を正しく入力してください。");
- db.entries.unshift({id:Date.now().toString(),date:today(),exercise:selected,muscle:muscleOf(selected),weight:w,reps:r,sets:s});
- save();remaining=rest;render();startTimer();alert("記録しました！");
+ let w=+$("#weight").value;
+ let r=+$("#reps").value;
+ let s=+$("#sets").value;
+
+ if(!(w>0&&r>0&&s>0))
+  return alert("重量・回数・セット数を正しく入力してください。");
+
+ db.entries.unshift({
+  id:Date.now().toString(),
+  date:today(),
+  exercise:selected,
+  muscle:muscleOf(selected),
+  weight:w,
+  reps:r,
+  sets:s
+ });
+
+ save();
+
+ remaining=rest;
+ render();
+
+ $("#weight").value=w;
+ $("#reps").value=r;
+ $("#sets").value=s;
+
+ $("#weightWheel").value=String(w);
+ $("#repsWheel").value=String(r);
+ $("#setsWheel").value=String(s);
+
+ updateEstimate();
+
+ startTimer();
 }
+
 function clock(n){return `${String(Math.floor(n/60)).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`;}
 function startTimer(){
  clearInterval(timer);if(!remaining)remaining=rest;
