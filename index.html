@@ -137,7 +137,7 @@ function record(){
       max="500"
       step="0.5"
       value="60"
-      style="min-height:64px;font-size:22px;text-align:center"
+      style="min-height:86px;height:86px;font-size:24px;text-align:center;touch-action:none"
       oninput="updateEstimate()"
       ontouchstart="startSwipe(event,'weight')"
       ontouchmove="moveSwipe(event)"
@@ -154,7 +154,7 @@ function record(){
       min="1"
       max="100"
       value="10"
-      style="min-height:64px;font-size:22px;text-align:center"
+      style="min-height:86px;height:86px;font-size:24px;text-align:center;touch-action:none"
       oninput="updateEstimate()"
       ontouchstart="startSwipe(event,'reps')"
       ontouchmove="moveSwipe(event)"
@@ -171,7 +171,7 @@ function record(){
       min="1"
       max="20"
       value="3"
-      style="min-height:64px;font-size:22px;text-align:center"
+      style="min-height:86px;height:86px;font-size:24px;text-align:center;touch-action:none"
       oninput="updateEstimate()"
       ontouchstart="startSwipe(event,'sets')"
       ontouchmove="moveSwipe(event)"
@@ -203,13 +203,14 @@ function startSwipe(event,id){
 function moveSwipe(event){
  if(!swipeState)return;
 
+ event.preventDefault();
+
  let y=event.touches[0].clientY;
  let distance=swipeState.startY-y;
- let steps=Math.trunc(distance/24);
+ let steps=Math.trunc(distance/20);
 
  if(steps!==0){
   swipeState.moved=true;
-  event.preventDefault();
 
   let limits={
    weight:[0,500],
@@ -222,11 +223,13 @@ function moveSwipe(event){
    Math.max(limits[swipeState.id][0],value));
 
   let input=$("#"+swipeState.id);
-  input.value=value;
+  input.value=swipeState.id==="weight"
+   ? Math.round(value*2)/2
+   : value;
+
   updateEstimate();
  }
 }
-
 function endSwipe(event){
  if(swipeState&&swipeState.moved){
   event.preventDefault();
