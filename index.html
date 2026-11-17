@@ -93,6 +93,38 @@ function save(){localStorage.setItem("ironlog-v1",JSON.stringify(db));}
 function fmt(n){return Math.round(n).toLocaleString("ja-JP");}
 function oneRM(w,r){return r>0?w*(1+r/30):0;}
 function muscleOf(name){return allExercises.find(x=>x.name===name)?.muscle||"その他";}
+
+function recoveryHTML(){
+ let muscles=Object.keys(catalog).filter(m=>m!=="その他");
+ let hours={"胸":72,"背中":72,"脚":72,"肩":48,"腕":48,"腹":36};
+ let html=muscles.map(m=>{
+  let rows=db.entries.filter(x=>x.muscle===m);
+  if(!rows.length){
+   return `<div class="lineitem"><span>${m}</span><b>未記録</b></div>`;
+  }
+
+  let lastDate=rows.map(x=>x.date).sort().reverse()[0];
+  let lastRows=rows.filter(x=>x.date===lastDate);
+  let sets=lastRows.reduce((a,x)=>a+(+x.sets||0),0);
+  let recoveryHours=(hours[m]||48)*(1+Math.max(0,sets-3)*0.08);
+  let days=Math.max(0,Math.floor((new Date(today()+"T00:00:00")-new Date(lastDate+"T00:00:00"))/86400000));
+  let percent=Math.min(100,Math.round(days*24/recoveryHours*100));
+
+  let status=percent>=100?"回復完了":percent>=40?"回復途中":"回復不足";
+  let color=percent>=100?"#22c55e":percent>=40?"#eab308":"#ef4444";
+
+  return `<div style="margin:14px 0">
+   <div class="lineitem"><span>${m}</span><b style="color:${color}">${status} ・ ${percent}%</b></div>
+   <div style="height:8px;background:var(--line);border-radius:8px;overflow:hidden">
+    <div style="height:100%;width:${percent}%;background:${color};border-radius:8px"></div>
+   </div>
+   <small class="muted">最終トレーニング：${lastDate} ・ ${sets}セット</small>
+  </div>`;
+ }).join("");
+
+ return panel("部位別コンディション",html);
+}
+
 function panel(title,content){return `<section class="panel"><h3>${title}</h3>${content}</section>`;}
 function empty(t){return `<div class="empty">${t}</div>`;}
 function setTab(t){tab=t;document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));render();}
@@ -394,6 +426,7 @@ function drawWeightGraph(exercise){
 
 function body(){
  return `<div class="title">身体管理</div>
+ ${recoveryHTML()}
  ${panel("体重を記録",`<label>体重 (kg)</label><input id="bodyWeight" type="number" step=".1" placeholder="例：65.0"><button class="primary" onclick="addWeight()">体重を保存</button>`)}
  ${panel("体重履歴",db.weights.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(x=>`<div class="lineitem"><span>${x.date}</span><b style="color:var(--lime)">${x.weight}kg</b></div>`).join("")||empty("記録はありません。"))}
  ${panel("データのバックアップ",`<div class="muted">トレーニング記録や体重データをJSONファイルに保存できます。</div><button class="primary" onclick="exportBackup()">バックアップを書き出す</button><label>バックアップから復元</label><input id="backupFile" type="file" accept="application/json"><button class="secondary" style="width:100%;margin-top:10px" onclick="importBackup()">復元する</button>`)}`;
