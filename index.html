@@ -206,7 +206,7 @@ function moveSwipe(event){
  event.preventDefault();
 
  let y=event.touches[0].clientY;
- let distance=swipeState.startY-y;
+ let distance=y-swipeState.startY;
  let steps=Math.trunc(distance/20);
 
  if(steps!==0){
