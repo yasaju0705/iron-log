@@ -111,13 +111,36 @@ function home(){
  <div class="stat"><div class="muted">鍛えた部位</div><b>${muscles.length}</b></div>
  <div class="stat"><div class="muted">累計記録</div><b>${db.entries.length}</b></div>
  </div>
- ${panel("今日のトレーニング",rows.length?rows.map(entryHTML).join(""):empty("まだ今日の記録はありません。"))}
+${panel("今日の記録",rows.length?todayExerciseHTML(rows):empty("まだ今日の記録はありません。"))}
  <button class="primary" onclick="setTab('record')">トレーニングを記録する</button>`;
 }
 function entryHTML(x){
  return `<div class="entry"><div><b>${x.exercise}</b><small>${x.date} ・ ${x.muscle}</small></div><strong>${x.weight}kg × ${x.reps}回 × ${x.sets}セット</strong></div>`;
 }
+function todayExerciseHTML(rows){
+ let groups={};
 
+ rows.forEach(x=>{
+  if(!groups[x.exercise])groups[x.exercise]=[];
+  groups[x.exercise].push(x);
+ });
+
+ return Object.entries(groups).map(([name,items])=>{
+  let best=Math.max(0,...db.entries
+   .filter(x=>x.exercise===name)
+   .map(x=>oneRM(x.weight,x.reps)));
+
+  return `<div class="entry">
+   <div>
+    <b>${name}</b>
+    <small>推定1RM：${best.toFixed(1)}kg</small>
+   </div>
+   <div>
+    ${items.map(x=>`<strong>${x.weight}kg × ${x.reps}回 × ${x.sets}セット</strong>`).join("<br>")}
+   </div>
+  </div>`;
+ }).join("");
+}
 function record(){
  let names=catalog[muscle];
  let last=db.entries.filter(x=>x.exercise===selected).sort((a,b)=>b.date.localeCompare(a.date))[0];
@@ -309,7 +332,8 @@ function analysis(){
  </select>
  <div id="weightGrowthChart"></div>
  `:empty("トレーニングを記録すると重量推移が表示されます。"))}
- ${panel("種目別ベスト推定1RM",names.length?names.map(n=>{let best=Math.max(...db.entries.filter(x=>x.exercise===n).map(x=>oneRM(x.weight,x.reps)));return `<div class="lineitem"><span>${n}</span><b style="color:var(--lime)">${best.toFixed(1)}kg</b></div>`}).join(""):empty("記録はまだありません。"))}`;
+ ${panel("種目別ベスト推定1RM",names.length?names.map(n=>{let best=Math.max(...db.entries.filter(x=>x.exercise===n).map(x=>oneRM(x.weight,x.reps)));return `<div class="lineitem"><span>${n}</span><b style="color:var(--lime)">${best.toFixed(1)}kg</b></div>`}).join(""):empty("記録はまだありません。"))}
+${panel("最近の記録",db.entries.length?db.entries.map(entryHTML).join(""):empty("記録はまだありません。"))}`;
 }
 
 function drawWeightGraph(exercise){
