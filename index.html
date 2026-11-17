@@ -125,25 +125,61 @@ function record(){
  ${panel("① 部位を選択",`<div class="chips">${Object.keys(catalog).map(m=>`<button class="chip ${muscle===m?"active":""}" onclick="chooseMuscle('${m}')">${m}</button>`).join("")}</div>`)}
  ${panel("② 種目を選択",`<select id="exercise" onchange="selected=this.value;render()">${names.map(n=>`<option ${selected===n?"selected":""}>${n}</option>`).join("")}</select>`)}
  ${panel("③ トレーニング内容",`
- <div class="row">
+<div class="row" style="gap:8px;align-items:stretch">
 
-<div>
-  <label>重量 (kg)</label>
-  <div class="row" style="gap:4px;align-items:center">
-    <button class="secondary" style="flex:0 0 auto;padding:10px 8px;white-space:nowrap" onclick="adjustWeight(-0.5)">−0.5</button>
-    <input id="weight" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="60" style="flex:1;min-width:0" oninput="syncInput('weight',this.value)">
-    <button class="secondary" style="flex:0 0 auto;padding:10px 8px;white-space:nowrap" onclick="adjustWeight(0.5)">＋0.5</button>
+  <div style="flex:1.5;min-width:0">
+    <label>重量（kg）</label>
+    <input
+      id="weight"
+      type="number"
+      inputmode="decimal"
+      min="0"
+      max="500"
+      step="0.5"
+      value="60"
+      style="min-height:64px;font-size:22px;text-align:center"
+      oninput="updateEstimate()"
+      ontouchstart="startSwipe(event,'weight')"
+      ontouchmove="moveSwipe(event)"
+      ontouchend="endSwipe(event)"
+    >
   </div>
-</div>
 
- <div><label>回数</label><input id="reps" type="number" inputmode="numeric" min="1" max="100" value="10" oninput="syncInput('reps',this.value)"></div>
- <div><label>セット</label><input id="sets" type="number" inputmode="numeric" min="1" max="20" value="3" oninput="syncInput('sets',this.value)"></div>
- </div>
- <div class="row">
- <div><label>重量をスクロールで選択</label><select id="weightWheel" onchange="syncWheel('weight',this.value)">${Array.from({length:1001},(_,i)=>i*0.5).map(v=>`<option value="${v}" ${v===60?"selected":""}>${v} kg</option>`).join("")}</select></div>
- <div><label>回数をスクロールで選択</label><select id="repsWheel" onchange="syncWheel('reps',this.value)">${Array.from({length:100},(_,i)=>i+1).map(v=>`<option value="${v}" ${v===10?"selected":""}>${v} 回</option>`).join("")}</select></div>
- <div><label>セット数を選択</label><select id="setsWheel" onchange="syncWheel('sets',this.value)">${Array.from({length:20},(_,i)=>i+1).map(v=>`<option value="${v}" ${v===3?"selected":""}>${v} セット</option>`).join("")}</select></div>
- </div>
+  <div style="flex:1;min-width:0">
+    <label>回数</label>
+    <input
+      id="reps"
+      type="number"
+      inputmode="numeric"
+      min="1"
+      max="100"
+      value="10"
+      style="min-height:64px;font-size:22px;text-align:center"
+      oninput="updateEstimate()"
+      ontouchstart="startSwipe(event,'reps')"
+      ontouchmove="moveSwipe(event)"
+      ontouchend="endSwipe(event)"
+    >
+  </div>
+
+  <div style="flex:1;min-width:0">
+    <label>セット</label>
+    <input
+      id="sets"
+      type="number"
+      inputmode="numeric"
+      min="1"
+      max="20"
+      value="3"
+      style="min-height:64px;font-size:22px;text-align:center"
+      oninput="updateEstimate()"
+      ontouchstart="startSwipe(event,'sets')"
+      ontouchmove="moveSwipe(event)"
+      ontouchend="endSwipe(event)"
+    >
+  </div>
+
+</div>
  <div class="muted">${last?`前回記録：${last.weight}kg × ${last.reps}回 × ${last.sets}セット（${last.date}）`:"この種目の過去記録はありません。"}</div>
  <div class="estimate"><div class="muted">推定1RM</div><b id="estimate">80.0 kg</b><div class="muted" id="volume">総ボリューム：1,800 kg</div></div>
  <button class="primary" onclick="addEntry()">記録する</button>`)}
@@ -151,14 +187,52 @@ function record(){
  ${panel("最近の記録",db.entries.slice(0,5).map(entryHTML).join("")||empty("記録はまだありません。"))}`;
 }
 function chooseMuscle(m){muscle=m;selected=catalog[m][0];render();}
-function syncWheel(id,value){$("#"+id).value=value;updateEstimate();}
- function adjustWeight(delta){
- let input=$("#weight");
- let wheel=$("#weightWheel");
- let next=Math.min(500,Math.max(0,Math.round((Number(input.value||0)+delta)*2)/2));
- input.value=next;
- wheel.value=String(next);
- updateEstimate();
+let swipeState=null;
+
+function startSwipe(event,id){
+ let input=$("#"+id);
+ swipeState={
+  id:id,
+  startY:event.touches[0].clientY,
+  startValue:Number(input.value)||0,
+  step:id==="weight"?0.5:1,
+  moved:false
+ };
+}
+
+function moveSwipe(event){
+ if(!swipeState)return;
+
+ let y=event.touches[0].clientY;
+ let distance=swipeState.startY-y;
+ let steps=Math.trunc(distance/24);
+
+ if(steps!==0){
+  swipeState.moved=true;
+  event.preventDefault();
+
+  let limits={
+   weight:[0,500],
+   reps:[1,100],
+   sets:[1,20]
+  };
+
+  let value=swipeState.startValue+steps*swipeState.step;
+  value=Math.min(limits[swipeState.id][1],
+   Math.max(limits[swipeState.id][0],value));
+
+  let input=$("#"+swipeState.id);
+  input.value=value;
+  updateEstimate();
+ }
+}
+
+function endSwipe(event){
+ if(swipeState&&swipeState.moved){
+  event.preventDefault();
+  document.activeElement.blur();
+ }
+ swipeState=null;
 }
 function updateEstimate(){
  let w=+$("#weight").value,r=+$("#reps").value,s=+$("#sets").value;
