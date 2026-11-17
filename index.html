@@ -126,14 +126,16 @@ function record(){
  ${panel("② 種目を選択",`<select id="exercise" onchange="selected=this.value;render()">${names.map(n=>`<option ${selected===n?"selected":""}>${n}</option>`).join("")}</select>`)}
  ${panel("③ トレーニング内容",`
  <div class="row">
- <div>
+
+<div>
   <label>重量 (kg)</label>
-  <input id="weight" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="60">
-  <div class="row" style="margin-top:6px">
-    <button class="secondary" onclick="adjustWeight(-0.5)">↓ 0.5</button>
-    <button class="secondary" onclick="adjustWeight(0.5)">↑ 0.5</button>
+  <div class="row" style="gap:4px;align-items:center">
+    <input id="weight" type="number" inputmode="decimal" min="0" max="500" step="0.5" value="60">
+    <button class="secondary" style="padding:10px 6px;white-space:nowrap" onclick="adjustWeight(-0.5)">↓0.5</button>
+    <button class="secondary" style="padding:10px 6px;white-space:nowrap" onclick="adjustWeight(0.5)">↑0.5</button>
   </div>
 </div>
+
  <div><label>回数</label><input id="reps" type="number" inputmode="numeric" min="1" value="10"></div>
  <div><label>セット</label><input id="sets" type="number" inputmode="numeric" min="1" value="3"></div>
  </div>
