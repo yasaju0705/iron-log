@@ -244,13 +244,21 @@ function record(){
 function chooseMuscle(m){muscle=m;selected=catalog[m][0];render();}
 let swipeState=null;
 
+
+let swipeState=null;
+
 function startSwipe(event,id){
  let input=$("#"+id);
+ let now=Date.now();
+
  swipeState={
   id:id,
   startY:event.touches[0].clientY,
+  lastY:event.touches[0].clientY,
+  lastTime:now,
   startValue:Number(input.value)||0,
   step:id==="weight"?0.5:1,
+  velocity:0,
   moved:false
  };
 }
@@ -260,7 +268,18 @@ function moveSwipe(event){
 
  event.preventDefault();
 
+ let now=Date.now();
  let y=event.touches[0].clientY;
+ let dy=y-swipeState.lastY;
+ let dt=Math.max(1,now-swipeState.lastTime);
+
+ let speed=dy/dt;
+ swipeState.velocity=swipeState.velocity*0.5+speed*0.5;
+ swipeState.velocity=Math.max(-1.5,Math.min(1.5,swipeState.velocity));
+
+ swipeState.lastY=y;
+ swipeState.lastTime=now;
+
  let distance=y-swipeState.startY;
  let steps=Math.trunc(distance/20);
 
@@ -285,12 +304,62 @@ function moveSwipe(event){
   updateEstimate();
  }
 }
+
 function endSwipe(event){
- if(swipeState&&swipeState.moved){
+ if(!swipeState)return;
+
+ let state=swipeState;
+ swipeState=null;
+
+ if(state.moved){
   event.preventDefault();
   document.activeElement.blur();
+
+  let velocity=state.velocity;
+  let lastFrame=performance.now();
+  let elapsed=0;
+  let distance=0;
+  let limits={
+   weight:[0,500],
+   reps:[1,100],
+   sets:[1,20]
+  };
+
+  function coast(now){
+   let dt=Math.min(32,now-lastFrame);
+   lastFrame=now;
+   elapsed+=dt;
+
+   distance+=velocity*dt;
+   let steps=Math.trunc(distance/20);
+
+   if(steps!==0){
+    distance-=steps*20;
+
+    let input=$("#"+state.id);
+    let value=Number(input.value)+steps*state.step;
+
+    value=Math.min(limits[state.id][1],
+     Math.max(limits[state.id][0],value));
+
+    input.value=state.id==="weight"
+     ? Math.round(value*2)/2
+     : value;
+
+    updateEstimate();
+   }
+
+   velocity*=Math.pow(0.90,dt/16);
+
+   if(Math.abs(velocity)>0.025&&elapsed<900){
+    requestAnimationFrame(coast);
+   }
+  }
+
+  if(Math.abs(velocity)>0.025){
+   requestAnimationFrame(coast);
+  }
  }
- swipeState=null;
 }
 function updateEstimate(){
  let w=+$("#weight").value,r=+$("#reps").value,s=+$("#sets").value;
