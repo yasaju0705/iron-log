@@ -47,6 +47,13 @@ button{border:0;border-radius:11px;padding:13px;font-size:13px;font-weight:800}
 .empty{font-size:12px;color:var(--muted);padding:10px 0}
 .estimate{background:#20282c;padding:13px;border-radius:12px;margin-top:12px}
 .estimate b{display:block;color:var(--lime);font-size:24px;margin:5px 0}
+.exercise-picker{position:relative}
+.exercise-current{width:100%;min-height:54px;background:#090d0f;color:white;border:1px solid #344047;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:16px}
+.exercise-current:active{border-color:var(--lime)}
+.exercise-options{margin-top:8px;background:#101619;border:1px solid var(--line);border-radius:12px;padding:6px;max-height:280px;overflow-y:auto}
+.exercise-option{width:100%;display:flex;justify-content:space-between;align-items:center;text-align:left;background:transparent;color:white;padding:14px 12px;border-radius:9px;font-size:14px}
+.exercise-option.active{background:#263137;color:var(--lime)}
+.exercise-option:active{background:#263137}
 </style>
 </head>
 <body>
@@ -178,7 +185,22 @@ function record(){
  let last=db.entries.filter(x=>x.exercise===selected).sort((a,b)=>b.date.localeCompare(a.date))[0];
  return `<div class="title">トレーニング記録</div>
  ${panel("① 部位を選択",`<div class="chips">${Object.keys(catalog).map(m=>`<button class="chip ${muscle===m?"active":""}" onclick="chooseMuscle('${m}')">${m}</button>`).join("")}</div>`)}
- ${panel("② 種目を選択",`<select id="exercise" onchange="selected=this.value;render()">${names.map(n=>`<option ${selected===n?"selected":""}>${n}</option>`).join("")}</select>`)}
+ ${panel("② 種目を選択",`
+<div class="exercise-picker">
+ <button class="exercise-current" onclick="toggleExerciseList()">
+  <span><span class="exercise-icon">${exerciseIcon(selected)}</span> ${selected}</span>
+  <span>⌄</span>
+ </button>
+ <div class="exercise-options" id="exerciseOptions" style="display:none">
+  ${names.map(n=>`
+   <button class="exercise-option ${selected===n?"active":""}" onclick="selectExercise('${n}')">
+    <span><span class="exercise-icon">${exerciseIcon(n)}</span> ${n}</span>
+    <span>${selected===n?"✓":""}</span>
+   </button>
+  `).join("")}
+ </div>
+</div>
+`)}
  ${panel("③ トレーニング内容",`
 <div class="row" style="gap:8px;align-items:stretch">
 
@@ -242,7 +264,30 @@ function record(){
  ${panel("最近の記録",db.entries.slice(0,5).map(entryHTML).join("")||empty("記録はまだありません。"))}`;
 }
 function chooseMuscle(m){muscle=m;selected=catalog[m][0];render();}
-let swipeState=null;
+function exerciseIcon(name){
+ let m=muscleOf(name);
+ let icons={
+  "胸":"🏋️",
+  "背中":"🧗",
+  "肩":"🏹",
+  "腕":"💪",
+  "脚":"🦵",
+  "腹":"🔥",
+  "その他":"🏃"
+ };
+ return icons[m]||"🏋️";
+}
+
+function toggleExerciseList(){
+ let el=$("#exerciseOptions");
+ el.style.display=el.style.display==="none"?"block":"none";
+}
+
+function selectExercise(name){
+ selected=name;
+ render();
+}
+ let swipeState=null;
 
 
 
@@ -519,7 +564,7 @@ function render(){
 }
  if(tab==="record"){
   ["weight","reps","sets"].forEach(id=>$("#"+id).addEventListener("input",updateEstimate));
-  $("#exercise").value=selected;
+  
   updateEstimate();
  }
 }
