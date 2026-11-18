@@ -350,6 +350,22 @@ function plans(){
 function savePlans(){document.querySelectorAll("[data-plan]").forEach(el=>db.plans[el.dataset.plan]=el.value);save();alert("保存しました！");}
 
 
+function groupedExerciseHTML(type){
+ return Object.keys(catalog).filter(m=>m!=="その他").map(m=>{
+  let rows=db.entries.filter(x=>x.muscle===m);
+  if(!rows.length)return "";
+
+  let content=type==="best"
+   ? [...new Set(rows.map(x=>x.exercise))].map(name=>{
+      let best=Math.max(...rows.filter(x=>x.exercise===name).map(x=>oneRM(x.weight,x.reps)));
+      return `<div class="lineitem"><span>${name}</span><b style="color:var(--lime)">${best.toFixed(1)}kg</b></div>`;
+     }).join("")
+   : rows.map(entryHTML).join("");
+
+  return `<h4>${m}</h4>${content}`;
+ }).join("")||empty("記録はまだありません。");
+}
+
 function analysis(){
  let groups={};
  db.entries.filter(x=>x.date===today()).forEach(x=>groups[x.muscle]=(groups[x.muscle]||0)+x.weight*x.reps*x.sets);
@@ -364,8 +380,8 @@ function analysis(){
  </select>
  <div id="weightGrowthChart"></div>
  `:empty("トレーニングを記録すると重量推移が表示されます。"))}
- ${panel("種目別ベスト推定1RM",names.length?names.map(n=>{let best=Math.max(...db.entries.filter(x=>x.exercise===n).map(x=>oneRM(x.weight,x.reps)));return `<div class="lineitem"><span>${n}</span><b style="color:var(--lime)">${best.toFixed(1)}kg</b></div>`}).join(""):empty("記録はまだありません。"))}
-${panel("最近の記録",db.entries.length?db.entries.map(entryHTML).join(""):empty("記録はまだありません。"))}`;
+ ${panel("部位別ベスト推定1RM",groupedExerciseHTML("best"))}
+${panel("部位別の最近の記録",groupedExerciseHTML("recent"))}
 }
 
 function drawWeightGraph(exercise){
